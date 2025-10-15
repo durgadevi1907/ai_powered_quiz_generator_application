@@ -29,16 +29,16 @@ class QuestionGenerator(Resource):
                 }, 400
             
             # Generate questions using Gemini
-            questions_data = gemini_llm.generate_questions(topic, number_questions)
+            questions_list = gemini_llm.generate_questions(topic, number_questions)
             
             # Validate the response structure
-            if 'questions' not in questions_data:
+            if not isinstance(questions_list, list):
                 return {
                     'error': 'Invalid response format from AI service'
                 }, 500
             
             # Ensure we have the requested number of questions
-            actual_questions = questions_data['questions'][:number_questions]
+            actual_questions = questions_list[:number_questions]
             
             response = {
                 'questions': actual_questions
