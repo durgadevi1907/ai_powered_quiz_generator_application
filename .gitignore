@@ -3,3 +3,45 @@ build/
 dist/
 .env
 *.log
+.venv/
+
+# Frontend (React/CRA)
+Milestone 1/frontend/node_modules/
+Milestone 1/frontend/.pnp/
+Milestone 1/frontend/pnp.*
+Milestone 1/frontend/.eslintcache
+Milestone 1/frontend/.cache/
+Milestone 1/frontend/coverage/
+Milestone 1/frontend/build/
+Milestone 1/frontend/*.log
+Milestone 1/frontend/npm-debug.log*
+Milestone 1/frontend/yarn-debug.log*
+Milestone 1/frontend/yarn-error.log*
+
+# Backend (Python/Flask)
+Milestone 1/backend/__pycache__/
+Milestone 1/backend/**/*.pyc
+Milestone 1/backend/.pytest_cache/
+Milestone 1/backend/.mypy_cache/
+Milestone 1/backend/.ruff_cache/
+Milestone 1/backend/.coverage
+Milestone 1/backend/coverage.xml
+Milestone 1/backend/.DS_Store
+Milestone 1/backend/instance/
+Milestone 1/backend/.env
+Milestone 1/backend/venv/
+Milestone 1/backend/.venv/
+Milestone 1/backend/env/
+
+# Root env/config
+.env
+.env.*.local
+
+# Editors/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
