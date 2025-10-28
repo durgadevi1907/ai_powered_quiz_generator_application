@@ -22,7 +22,7 @@ questions_response_model = questions_ns.model('QuestionsResponse', {
     'questions': fields.List(fields.Nested(question_model), description='List of generated questions')
 })
 
-@questions_ns.route('/generate-questions')
+@questions_ns.route('/generate')
 class GenerateQuestions(Resource):
     @questions_ns.expect(question_request_model)
     @questions_ns.response(200, 'Success', questions_response_model)

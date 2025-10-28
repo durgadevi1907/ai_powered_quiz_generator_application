@@ -1,0 +1,344 @@
+import os
+import time
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+# Load environment variables from .env file
+load_dotenv()
+
+class Question(BaseModel):
+    """Pydantic model for a single quiz question"""
+    question: str = Field(description="The quiz question text")
+    options: List[str] = Field(description="List of exactly 4 answer options")
+    answer: str = Field(description="The correct answer from the options")
+
+    def clean_text(self) -> None:
+        """Clean up text fields by normalizing whitespace"""
+        self.question = " ".join(line.strip() for line in self.question.splitlines())
+        self.answer = " ".join(line.strip() for line in self.answer.splitlines())
+        self.options = [" ".join(line.strip() for line in opt.splitlines()) for opt in self.options]
+
+    def validate_answer(self) -> bool:
+        """Validate that answer exists in options"""
+        return (
+            len(self.options) == 4 and
+            all(isinstance(opt, str) and opt.strip() for opt in self.options) and
+            self.answer in self.options
+        )
+
+class QuizQuestions(BaseModel):
+    """Pydantic model for a collection of quiz questions"""
+    questions: List[Question] = Field(description="List of generated quiz questions")
+
+
+class GeminiClient:
+    def __init__(self):
+        """Initialize the Gemini client with multiple model support and rate limiting"""
+        # Get and validate API key
+        self.api_key = os.getenv("GOOGLE_API_KEY")
+        if not self.api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        if len(self.api_key) < 10:
+            raise ValueError("GOOGLE_API_KEY appears to be invalid")
+
+        print(f"API Key found (length: {len(self.api_key)})")
+
+        # Model configuration
+        self.model_configs = [
+            {"name": "gemini-2.5-pro", "temperature": 0.7},
+            {"name": "gemini-2.0-pro-exp", "temperature": 0.7},
+            {"name": "gemini-2.5-flash", "temperature": 0.7},
+            {"name": "gemini-flash-latest", "temperature": 0.7}
+        ]
+
+        # Initialize models
+        self.models: Dict[str, ChatGoogleGenerativeAI] = {}
+        self.current_model: Optional[str] = None
+        
+        print("\nInitializing Gemini models...")
+        for config in self.model_configs:
+            try:
+                model = ChatGoogleGenerativeAI(
+                    model=config["name"],
+                    google_api_key=self.api_key,
+                    temperature=config["temperature"]
+                )
+                
+                # Create structured output wrapper
+                structured_model = model.with_structured_output(QuizQuestions)
+                
+                # Test the model
+                test_prompt = "Generate 1 simple test question about math."
+                try:
+                    result = structured_model.invoke(test_prompt)
+                    if result and result.questions:
+                        print(f"Successfully initialized {config['name']}")
+                        self.models[config["name"]] = structured_model
+                        if not self.current_model:
+                            self.current_model = config["name"]
+                except Exception as test_error:
+                    print(f"Failed to test {config['name']}: {str(test_error)}")
+                    continue
+                    
+            except Exception as e:
+                print(f"Failed to initialize {config['name']}: {str(e)}")
+                continue
+
+        if not self.models:
+            raise ValueError("Failed to initialize any models")
+
+        # Initialize rate limit tracking
+        self.request_times: Dict[str, List[float]] = {
+            model: [] for model in self.models
+        }
+        
+        n_models = len(self.models)
+        print(f"\nInitialization complete:")
+        print(f"- {n_models} models available")
+        print(f"- Using {self.current_model} as primary model")
+        print(f"- {n_models-1} fallback models ready")
+    def _check_rate_limit(self, model_name: str) -> bool:
+        """Check if we're within rate limits for a model
+        
+        Args:
+            model_name: Name of the model to check
+            
+        Returns:
+            bool: True if we can make a request, False if we need to wait
+        """
+        now = time.time()
+        minute_ago = now - 60
+        
+        # Clean old requests
+        self.request_times[model_name] = [
+            t for t in self.request_times[model_name] 
+            if t > minute_ago
+        ]
+        
+        # Check if we're within limits
+        return len(self.request_times[model_name]) < 2  # 2 requests per minute
+        
+    def _update_rate_limit(self, model_name: str):
+        """Record a request for rate limiting"""
+        self.request_times[model_name].append(time.time())
+        
+    def generate_questions(self, topic: str, number_questions: int) -> Dict[str, List[Dict]]:
+        """Generate multiple choice questions about a topic.
+
+        Args:
+            topic (str): Topic to generate questions about
+            number_questions (int): Number of questions to generate
+
+        Returns:
+            Dict[str, List[Dict]]: Dictionary containing:
+                {
+                    'questions': [
+                        {
+                            'question': str,
+                            'options': List[str],
+                            'answer': str
+                        },
+                        ...
+                    ]
+                }
+
+        Raises:
+            ValueError: If unable to generate valid questions
+        """
+        try:
+            prompt = f"""
+            Generate {number_questions} multiple choice questions about the topic: "{topic}".
+            
+            Requirements:
+            1. Each question should have exactly 4 options
+            2. Only one option should be correct
+            3. Questions should be educational and appropriate
+            4. The answer field should contain the exact text of the correct option
+            5. Questions should be challenging but fair
+            6. No explanations needed, just questions
+            
+            Generate exactly {number_questions} questions.
+            """
+        try:
+            prompt = f"""Generate {number_questions} multiple choice questions about {topic}.
+
+IMPORTANT: Your response must be valid JSON in EXACTLY this format:
+{{
+    "questions": [
+        {{
+            "question": "What is the capital of France?",
+            "options": ["London", "Berlin", "Paris", "Madrid"],
+            "answer": "Paris"
+        }},
+        ... more questions ...
+    ]
+}}
+
+REQUIREMENTS:
+1. Response must be ONLY the JSON object shown above
+2. Must generate exactly {number_questions} questions
+3. Each question must have exactly 4 options
+4. The answer must be exactly the same as one of the options
+5. Questions should be educational and appropriately challenging
+6. No explanations or other text outside the JSON
+7. No markdown formatting or code blocks
+8. Must be valid JSON that can be parsed by json.loads()
+
+If you understand these requirements, proceed with generating the questions."""
+
+            print(f"Generating {number_questions} questions about {topic}...")
+            
+            import time
+            from datetime import datetime, timedelta
+            
+            # Initialize rate limit tracking if needed
+            now = datetime.now()
+            if now - datetime.fromtimestamp(self.last_request_time) > timedelta(minutes=1):
+                self.requests_this_minute = 0
+                
+            # Rate limit enforcement
+            if self.requests_this_minute >= 50:  # Conservative limit
+                wait_time = 60 - (now - datetime.fromtimestamp(self.last_request_time)).seconds
+                if wait_time > 0:
+                    print(f"Rate limit approaching, waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                self.requests_this_minute = 0
+                
+            # Get AI response with retries and fallbacks
+            max_retries = 3
+            retry_count = 0
+            last_error = None
+            response = None
+            
+            # List of fallback models
+            models = [
+                'gemini-2.5-pro',
+                'gemini-2.0-pro-exp',
+                'gemini-pro-latest',
+                'gemini-2.5-flash'
+            ]
+            
+            while retry_count < max_retries * len(models):
+                try:
+                    # Calculate current model based on retry count
+                    model_index = retry_count // max_retries
+                    if model_index >= len(models):
+                        break
+                        
+                    current_model = models[model_index]
+                    attempt = retry_count % max_retries + 1
+                    
+                    print(f"Attempt {attempt}/3 with model {current_model}")
+                    
+                    # Update model if needed
+                    if current_model != self.model.model_name:
+                        try:
+                            print(f"Switching to model: {current_model}")
+                            self.model = genai.GenerativeModel(current_model)
+                        except Exception as e:
+                            print(f"Failed to switch to {current_model}: {str(e)}")
+                            retry_count += max_retries  # Skip to next model
+                            continue
+                    
+                    # Track request
+                    self.last_request_time = datetime.now().timestamp()
+                    self.requests_this_minute += 1
+                    
+                    # Make request
+                    response = self.model.generate_content(prompt)
+                    if response and response.text:
+                        break
+                        
+                except Exception as api_error:
+                    last_error = api_error
+                    error_str = str(api_error)
+                    
+                    if "429" in error_str or "quota" in error_str.lower():
+                        # Parse retry delay from error if available
+                        import re
+                        delay_match = re.search(r"retry in (\d+)", error_str)
+                        retry_delay = int(delay_match.group(1)) if delay_match else 60
+                        
+                        # Exponential backoff with jitter
+                        wait_time = min(
+                            retry_delay * (2 ** (retry_count % max_retries)),
+                            300  # Max 5 minute wait
+                        )
+                        print(f"Rate limit hit, waiting {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        
+                        # Move to next model if rate limited repeatedly
+                        if retry_count % max_retries == max_retries - 1:
+                            print("Rate limits persistent, trying next model...")
+                            
+                    elif "404" in error_str:
+                        print(f"Model {current_model} not found, trying next...")
+                        retry_count = (model_index + 1) * max_retries
+                        continue
+                        
+                    else:
+                        print(f"Error: {error_str}")
+                        
+                    retry_count += 1
+                    
+                    if retry_count >= max_retries * len(models):
+                        raise ValueError(
+                            "Failed after trying all models. "
+                            f"Last error: {str(last_error)}"
+                        )
+            
+            if not response or not response.text:
+                raise ValueError("Failed to get valid response from any model")
+                
+            print(f"Raw response from Gemini:\n{response.text}\n")
+            
+            # Clean up response text:
+            response_text = response.text
+            
+            # 1. Remove any markdown formatting
+            if response_text.startswith('```json'):
+                response_text = response_text[7:]
+            elif response_text.startswith('```'):
+                response_text = response_text[3:]
+            if response_text.endswith('```'):
+                response_text = response_text[:-3]
+            
+            # 2. Clean up whitespace
+            response_text = response_text.strip()
+            
+            # 3. Clean up newlines in questions and answers
+            try:
+                # First try to parse as-is
+                data = json.loads(response_text)
+                
+                # Clean up newlines in questions/answers if parsing succeeded
+                for q in data.get('questions', []):
+                    if isinstance(q, dict):
+                        # Replace multiple newlines with single newline
+                        if 'question' in q:
+                            q['question'] = ' '.join(line.strip() for line in q['question'].splitlines())
+                        if 'answer' in q:
+                            q['answer'] = ' '.join(line.strip() for line in q['answer'].splitlines())
+                
+                # Re-encode as cleaned JSON
+                response_text = json.dumps(data, indent=4)
+            except json.JSONDecodeError:
+                # If initial parse failed, response_text remains unchanged
+                pass
+            
+            print(f"Raw response:\n{response_text}\n")
+            
+        try:
+            # If we get here, all models failed
+            error_msg = str(last_error) if last_error else "All models failed to generate valid questions"
+            raise ValueError(f"Failed to generate questions: {error_msg}")
+        except ValueError as e:
+            raise  # Re-raise ValueError
+        except Exception as e:
+            raise ValueError(f"Unexpected error: {str(e)}")
+
+# Singleton instance
+gemini_client = GeminiClient()

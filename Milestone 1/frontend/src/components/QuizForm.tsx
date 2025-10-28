@@ -26,10 +26,12 @@ const QuizForm: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/generate-questions', {
+      console.log('Sending request to generate questions...');
+      const response = await fetch('http://localhost:5000/api/questions/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           topic: topic.trim(),
@@ -37,8 +39,11 @@ const QuizForm: React.FC = () => {
         }),
       });
 
+      console.log('Response received:', response.status);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -51,7 +56,11 @@ const QuizForm: React.FC = () => {
       navigate('/quiz');
     } catch (err) {
       console.error('Error generating questions:', err);
-      setError('Failed to generate questions. Please check if the backend server is running.');
+      if (err instanceof Error) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('Failed to generate questions. Please check if the backend server is running.');
+      }
     } finally {
       setLoading(false);
     }
