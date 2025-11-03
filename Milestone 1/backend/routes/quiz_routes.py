@@ -72,6 +72,9 @@ class GetQuiz(Resource):
     def get(self, quiz_id):
         try:
             token = request.headers.get('Authorization')
+            if not token:
+                return {'message': 'Authorization token is required'}, 401
+                
             conn = get_db_connection()
             cursor = conn.cursor()
             
@@ -94,13 +97,24 @@ class GetQuiz(Resource):
                 return {'message': 'Quiz not found or already completed'}, 404
 
             # Generate questions for the incomplete quiz
+            # Generate questions and log the response
             questions = generate_questions(quiz['topic'], quiz['total_questions'])
-            return {
+            print(f"Generated questions response: {questions}")
+            
+            # Ensure we have valid questions before returning
+            if not questions or 'questions' not in questions:
+                print(f"Invalid questions format: {questions}")
+                raise ValueError('Failed to generate valid questions')
+            
+            # Log the final response structure
+            response_data = {
                 'id': quiz['id'],
                 'topic': quiz['topic'],
                 'total_questions': quiz['total_questions'],
-                'questions': questions
+                'questions': questions['questions']  # Just get the questions array
             }
+            print(f"Sending response: {response_data}")
+            return response_data
             
         except Exception as e:
             print(f"Error fetching quiz: {str(e)}")
