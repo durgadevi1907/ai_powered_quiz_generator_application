@@ -1,21 +1,32 @@
 from config import Config
 import google.generativeai as genai
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def test_gemini_api():
     try:
         # Configure API
-        api_key = Config.GEMINI_API_KEY
+        api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
         if not api_key:
-            return "Error: GEMINI_API_KEY not found"
+            print("Checking environment variables:")
+            print("GOOGLE_API_KEY:", os.getenv('GOOGLE_API_KEY'))
+            print("GEMINI_API_KEY:", os.getenv('GEMINI_API_KEY'))
+            return "Error: No API key found"
             
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro-latest')
         
-        # Test prompt
-        prompt = """Create 1 multiple choice question about Python programming.
+        print("\nAvailable models:")
+        for m in genai.list_models():
+            print(f"- {m.name}")
+            
+        # Initialize the model
+        model = genai.GenerativeModel('models/gemini-pro-latest')
 
-Required format:
+        # Test prompt
+        prompt = """Create 1 multiple choice question about Python programming.Required format:
 {
     "questions": [
         {

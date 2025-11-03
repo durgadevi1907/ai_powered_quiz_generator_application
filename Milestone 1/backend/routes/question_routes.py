@@ -1,7 +1,7 @@
 from flask_restx import Namespace, fields, Resource
 from flask import request
 import json
-from utils.llm_gemini import gemini_llm
+from utils.llm_gemini import generate_questions
 
 # Create namespace
 questions_ns = Namespace('questions', description='Question generation operations')
@@ -56,7 +56,7 @@ class GenerateQuestions(Resource):
             print(f"Generating {number_questions} questions about: {topic}")  # Debug log
             
             # Generate questions using Gemini
-            questions_data = gemini_llm.generate_questions(topic, number_questions)
+            questions_data = generate_questions(topic, number_questions)
             
             # Validate the response structure
             if 'questions' not in questions_data:
