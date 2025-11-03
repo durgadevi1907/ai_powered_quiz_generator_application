@@ -39,6 +39,28 @@ def init_db():
             )
         ''')
         
+        # Create quiz_attempts table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS quiz_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                topic TEXT NOT NULL,
+                score INTEGER DEFAULT 0,
+                total_questions INTEGER NOT NULL,
+                status TEXT CHECK(status IN ('completed', 'incomplete')) DEFAULT 'incomplete',
+                answers TEXT,  -- JSON string storing user's answers
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        # Add indexes for performance and data consistency
+        c.execute('''
+            CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_topic 
+            ON quiz_attempts(user_id, topic, status)
+        ''')
+        
         conn.commit()
     except Error as e:
         print(f"Error initializing database: {e}")

@@ -5,6 +5,7 @@ import QuizPage from './components/QuizPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Navbar from './components/navbar/Navbar';
+import Dashboard from './components/dashboard/Dashboard';
 import './App.css';
 
 export interface Question {
@@ -73,6 +74,16 @@ function App() {
 
             {/* Protected Routes */}
             <Route 
+              path="/dashboard" 
+              element={
+                isAuthenticated ? (
+                  <Dashboard />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } 
+            />
+            <Route 
               path="/quiz" 
               element={
                 isAuthenticated ? (
@@ -83,10 +94,20 @@ function App() {
               } 
             />
             <Route 
-              path="/" 
+              path="/quiz-form" 
               element={
                 isAuthenticated ? (
                   <QuizForm />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } 
+            />
+            <Route 
+              path="/" 
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/dashboard" />
                 ) : (
                   <Navigate to="/login" />
                 )

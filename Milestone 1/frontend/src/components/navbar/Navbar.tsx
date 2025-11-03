@@ -21,7 +21,22 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated, onLogout }) => {
             <div className="navbar-links">
                 {isAuthenticated ? (
                     <>
-                        <button onClick={() => navigate('/quiz')} className="nav-link">
+                        <button 
+                            onClick={() => navigate('/dashboard')} 
+                            className={`nav-link ${window.location.pathname === '/dashboard' ? 'active' : ''}`}
+                        >
+                            Dashboard
+                        </button>
+                        <button 
+                            onClick={() => {
+                                // Clear any existing quiz data
+                                sessionStorage.removeItem('quizId');
+                                sessionStorage.removeItem('quizData');
+                                sessionStorage.removeItem('quizTopic');
+                                navigate('/quiz-form');  // Navigate to quiz form instead of quiz
+                            }} 
+                            className={`nav-link ${window.location.pathname === '/quiz' ? 'active' : ''}`}
+                        >
                             Quiz
                         </button>
                         <button onClick={handleLogout} className="nav-link logout">

@@ -12,25 +12,83 @@ const QuizPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get quiz data from sessionStorage
-    const storedQuizData = sessionStorage.getItem('quizData');
-    const storedTopic = sessionStorage.getItem('quizTopic');
-    
-    if (!storedQuizData || !storedTopic) {
-      // If no quiz data, redirect to home
-      navigate('/');
-      return;
-    }
+    const initializeQuiz = async () => {
+      // Get quiz data from sessionStorage
+      const storedQuizData = sessionStorage.getItem('quizData');
+      const storedTopic = sessionStorage.getItem('quizTopic');
+      const storedQuizId = sessionStorage.getItem('quizId');
+      
+      if (!storedQuizId) {
+        // If no quiz ID, redirect to home
+        navigate('/');
+        return;
+      }
 
-    try {
-      const parsedData: QuizData = JSON.parse(storedQuizData);
-      setQuizData(parsedData);
-      setQuizTopic(storedTopic);
-      setSelectedAnswers(new Array(parsedData.questions.length).fill(''));
-    } catch (error) {
-      console.error('Error parsing quiz data:', error);
-      navigate('/');
-    }
+      if (!storedQuizData || !storedTopic) {
+        // Try to fetch quiz data using stored ID
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:5000/api/quiz/${storedQuizId}`, {
+            headers: {
+              'Authorization': token || ''
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch quiz data');
+          }
+
+          const data = await response.json();
+          sessionStorage.setItem('quizData', JSON.stringify(data));
+          sessionStorage.setItem('quizTopic', data.topic);
+          
+          const formattedData: QuizData = {
+            questions: data.questions.map((q: any) => ({
+              question: q.question,
+              options: q.options || [],
+              answer: q.answer
+            }))
+          };
+          
+          setQuizData(formattedData);
+          setQuizTopic(data.topic);
+          setSelectedAnswers(new Array(formattedData.questions.length).fill(''));
+          return;
+        } catch (error) {
+          console.error('Error fetching quiz data:', error);
+          navigate('/');
+          return;
+        }
+      }
+
+      try {
+        const parsedData = JSON.parse(storedQuizData);
+        
+        // Check if the data has the correct structure
+        if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
+          throw new Error('Invalid quiz data structure');
+        }
+        
+        // Transform the data into QuizData structure
+        const formattedData: QuizData = {
+          questions: parsedData.questions.map((q: any) => ({
+            question: q.question,
+            options: q.options || [],
+            answer: q.answer
+          }))
+        };
+        
+        setQuizData(formattedData);
+        setQuizTopic(storedTopic);
+        setSelectedAnswers(new Array(formattedData.questions.length).fill(''));
+
+      } catch (error) {
+        console.error('Error parsing quiz data:', error);
+        navigate('/');
+      }
+    };
+
+    initializeQuiz();
   }, [navigate]);
 
   const handleAnswerSelect = (answer: string) => {
@@ -51,8 +109,51 @@ const QuizPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
-    setShowResults(true);
+  const handleSubmit = async () => {
+    try {
+      const score = calculateScore();
+      const token = localStorage.getItem('token');
+      const quizId = sessionStorage.getItem('quizId');
+      
+      if (!quizId) {
+        console.error('No quiz ID found');
+        return;
+      }
+
+      // Submit quiz results
+      const response = await fetch('http://localhost:5000/api/quiz/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({
+          quiz_id: parseInt(quizId),
+          topic: quizTopic,
+          score: score,
+          total_questions: quizData?.questions.length || 0,
+          answers: JSON.stringify(selectedAnswers)
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to submit quiz results:', errorData);
+        return;
+      }
+      
+      // Only clear storage and show results after successful submission
+      sessionStorage.removeItem('quizId');
+      sessionStorage.removeItem('quizData');
+      sessionStorage.removeItem('quizTopic');
+      setShowResults(true);
+      
+      // Refresh the dashboard data
+      navigate('/dashboard', { replace: true });
+      
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+    }
   };
 
   const calculateScore = () => {

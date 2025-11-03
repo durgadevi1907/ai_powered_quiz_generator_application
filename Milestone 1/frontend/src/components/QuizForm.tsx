@@ -22,6 +22,11 @@ const QuizForm: React.FC = () => {
       return;
     }
 
+    // Clear any existing quiz data
+    sessionStorage.removeItem('quizId');
+    sessionStorage.removeItem('quizData');
+    sessionStorage.removeItem('quizTopic');
+
     setLoading(true);
     setError('');
 
@@ -39,7 +44,6 @@ const QuizForm: React.FC = () => {
         }),
       });
 
-      console.log('Response received:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response:', errorText);
@@ -48,9 +52,30 @@ const QuizForm: React.FC = () => {
 
       const data = await response.json();
       
+      // Create incomplete quiz first
+      const token = localStorage.getItem('token');
+      const createResponse = await fetch('http://localhost:5000/api/quiz/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({
+          topic: topic.trim(),
+          total_questions: numberQuestions
+        })
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create quiz');
+      }
+
+      const quizData = await createResponse.json();
+      
       // Store quiz data in sessionStorage to pass to quiz page
       sessionStorage.setItem('quizData', JSON.stringify(data));
       sessionStorage.setItem('quizTopic', topic.trim());
+      sessionStorage.setItem('quizId', quizData.quiz_id.toString());
       
       // Navigate to quiz page
       navigate('/quiz');

@@ -36,6 +36,18 @@ def create_app():
         api.add_namespace(questions_ns, path='/questions')
     except Exception as e:
         app.logger.warning(f"Could not initialize question routes: {e}")
+        
+    # Import and add dashboard namespace
+    from routes.dashboard_routes import dashboard_ns
+    api.add_namespace(dashboard_ns, path='/dashboard')
+    
+    # Import and add quiz namespace
+    from routes.quiz_routes import quiz_ns
+    api.add_namespace(quiz_ns, path='/quiz')
+    
+    # Import and add debug namespace
+    from routes.debug_routes import debug_ns
+    api.add_namespace(debug_ns, path='/debug')
     
     # Basic test route
     @app.route('/')

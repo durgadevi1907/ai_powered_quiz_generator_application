@@ -230,3 +230,8 @@ class GeminiClient:
 
 # Singleton instance
 gemini_llm = GeminiClient()
+
+# Export the generate_questions function
+def generate_questions(topic: str, number_questions: int) -> Dict[str, List[Dict]]:
+    """Wrapper function to generate questions using the singleton GeminiClient instance"""
+    return gemini_llm.generate_questions(topic, number_questions)

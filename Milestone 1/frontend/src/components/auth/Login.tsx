@@ -36,7 +36,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 // Store token and update app state
                 localStorage.setItem('token', data.token);
                 onLogin(data.token);
-                navigate('/quiz'); // Navigate to quiz page after login
+                navigate('/dashboard'); // Navigate to dashboard after login
             } else {
                 setError(data.message || 'Login failed');
             }
