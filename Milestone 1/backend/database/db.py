@@ -49,6 +49,7 @@ def init_db():
                 total_questions INTEGER NOT NULL,
                 status TEXT CHECK(status IN ('completed', 'incomplete')) DEFAULT 'incomplete',
                 answers TEXT,  -- JSON string storing user's answers
+                questions TEXT, -- JSON string storing generated questions (optional)
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 completed_at TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
@@ -62,6 +63,16 @@ def init_db():
         ''')
         
         conn.commit()
+        # Ensure questions column exists (for upgrades where DB was created earlier)
+        try:
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(quiz_attempts)")
+            cols = [row[1] for row in cursor.fetchall()]
+            if 'questions' not in cols:
+                cursor.execute("ALTER TABLE quiz_attempts ADD COLUMN questions TEXT")
+                conn.commit()
+        except Exception as e:
+            print(f"Warning: could not ensure 'questions' column exists: {e}")
     except Error as e:
         print(f"Error initializing database: {e}")
         raise e

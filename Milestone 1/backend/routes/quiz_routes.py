@@ -41,16 +41,26 @@ class CreateQuiz(Resource):
                 
             user_id = user_data['user_id']
             
-            # Insert quiz attempt as incomplete
+            # Insert quiz attempt as incomplete (store questions if provided)
+            questions_json = None
+            if 'questions' in data:
+                # Expecting data['questions'] to be a JSON-serializable object (list/dict)
+                try:
+                    import json as _json
+                    questions_json = _json.dumps(data['questions'])
+                except Exception:
+                    questions_json = None
+
             cursor.execute('''
                 INSERT INTO quiz_attempts (
-                    user_id, topic, total_questions, 
-                    status, created_at
-                ) VALUES (?, ?, ?, ?, ?)
+                    user_id, topic, total_questions,
+                    questions, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
             ''', (
                 user_id,
                 data['topic'],
                 data['total_questions'],
+                questions_json,
                 'incomplete',
                 datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             ))
@@ -72,9 +82,6 @@ class GetQuiz(Resource):
     def get(self, quiz_id):
         try:
             token = request.headers.get('Authorization')
-            if not token:
-                return {'message': 'Authorization token is required'}, 401
-                
             conn = get_db_connection()
             cursor = conn.cursor()
             
@@ -96,25 +103,31 @@ class GetQuiz(Resource):
             if not quiz:
                 return {'message': 'Quiz not found or already completed'}, 404
 
-            # Generate questions for the incomplete quiz
-            # Generate questions and log the response
-            questions = generate_questions(quiz['topic'], quiz['total_questions'])
-            print(f"Generated questions response: {questions}")
-            
-            # Ensure we have valid questions before returning
-            if not questions or 'questions' not in questions:
-                print(f"Invalid questions format: {questions}")
-                raise ValueError('Failed to generate valid questions')
-            
-            # Log the final response structure
-            response_data = {
+            # If questions were stored at creation time, return them; otherwise generate
+            stored_questions = quiz['questions'] if 'questions' in quiz.keys() else None
+            if stored_questions:
+                try:
+                    import json as _json
+                    questions_obj = _json.loads(stored_questions)
+                except Exception:
+                    questions_obj = None
+            else:
+                questions_obj = None
+
+            if not questions_obj:
+                # Fallback: generate questions dynamically (may fail if LLM unavailable)
+                try:
+                    questions_obj = generate_questions(quiz['topic'], quiz['total_questions'])
+                except Exception as e:
+                    print(f"Error generating questions for quiz {quiz_id}: {e}")
+                    return {'error': 'Failed to fetch quiz questions'}, 500
+
+            return {
                 'id': quiz['id'],
                 'topic': quiz['topic'],
                 'total_questions': quiz['total_questions'],
-                'questions': questions['questions']  # Just get the questions array
+                'questions': questions_obj.get('questions') if isinstance(questions_obj, dict) else questions_obj
             }
-            print(f"Sending response: {response_data}")
-            return response_data
             
         except Exception as e:
             print(f"Error fetching quiz: {str(e)}")

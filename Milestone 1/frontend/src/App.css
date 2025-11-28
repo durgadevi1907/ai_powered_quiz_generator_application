@@ -11,6 +11,7 @@ main {
   justify-content: center;
   align-items: flex-start;
   padding: 2rem;
+  margin-top: 72px; /* space for fixed navbar */
 }
 
 .loading {

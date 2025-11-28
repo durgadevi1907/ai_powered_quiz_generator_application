@@ -32,7 +32,7 @@ const QuizForm: React.FC = () => {
 
     try {
       console.log('Sending request to generate questions...');
-      const response = await fetch('http://localhost:5000/api/questions/generate', {
+  const response = await fetch('/api/questions/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +54,11 @@ const QuizForm: React.FC = () => {
       
       // Create incomplete quiz first
       const token = localStorage.getItem('token');
-      const createResponse = await fetch('http://localhost:5000/api/quiz/create', {
+      if (!token) {
+        throw new Error('You must be logged in to create a quiz');
+      }
+
+      const createResponse = await fetch('/api/quiz/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +66,8 @@ const QuizForm: React.FC = () => {
         },
         body: JSON.stringify({
           topic: topic.trim(),
-          total_questions: numberQuestions
+          total_questions: numberQuestions,
+          questions: data // persist generated questions on the server to support resume
         })
       });
 

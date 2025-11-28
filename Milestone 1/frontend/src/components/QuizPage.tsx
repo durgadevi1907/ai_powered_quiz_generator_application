@@ -28,7 +28,7 @@ const QuizPage: React.FC = () => {
         // Try to fetch quiz data using stored ID
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:5000/api/quiz/${storedQuizId}`, {
+          const response = await fetch(`/api/quiz/${storedQuizId}`, {
             headers: {
               'Authorization': token || ''
             }
@@ -121,7 +121,7 @@ const QuizPage: React.FC = () => {
       }
 
       // Submit quiz results
-      const response = await fetch('http://localhost:5000/api/quiz/submit', {
+      const response = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

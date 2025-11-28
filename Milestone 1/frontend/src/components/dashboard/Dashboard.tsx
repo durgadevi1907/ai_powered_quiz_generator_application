@@ -44,7 +44,7 @@ const Dashboard: React.FC = (): JSX.Element => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+  const response = await fetch('/api/dashboard/stats', {
         headers: {
           'Authorization': token
         }
@@ -78,7 +78,7 @@ const Dashboard: React.FC = (): JSX.Element => {
   const resumeQuiz = async (quizId: number) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`, {
+  const response = await fetch(`/api/quiz/${quizId}`, {
         headers: {
           'Authorization': token || ''
         }
