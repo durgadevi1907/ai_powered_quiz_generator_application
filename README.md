@@ -252,4 +252,3 @@ Software Developer | Angular Developer | Python & Data Analytics Learner
 
 ## License
 
-This project was developed for educational and learning purposes.

@@ -5,6 +5,7 @@ import './QuizForm.css';
 const QuizForm: React.FC = () => {
   const [topic, setTopic] = useState('');
   const [numberQuestions, setNumberQuestions] = useState(5);
+  const [difficulty, setDifficulty] = useState('intermediate');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -26,13 +27,14 @@ const QuizForm: React.FC = () => {
     sessionStorage.removeItem('quizId');
     sessionStorage.removeItem('quizData');
     sessionStorage.removeItem('quizTopic');
+    sessionStorage.removeItem('quizDifficulty');
 
     setLoading(true);
     setError('');
 
     try {
       console.log('Sending request to generate questions...');
-  const response = await fetch('/api/questions/generate', {
+      const response = await fetch('/api/questions/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,6 +43,7 @@ const QuizForm: React.FC = () => {
         body: JSON.stringify({
           topic: topic.trim(),
           number_questions: numberQuestions,
+          difficulty: difficulty,
         }),
       });
 
@@ -67,7 +70,8 @@ const QuizForm: React.FC = () => {
         body: JSON.stringify({
           topic: topic.trim(),
           total_questions: numberQuestions,
-          questions: data // persist generated questions on the server to support resume
+          difficulty: difficulty,
+          questions: data
         })
       });
 
@@ -77,10 +81,11 @@ const QuizForm: React.FC = () => {
 
       const quizData = await createResponse.json();
       
-      // Store quiz data in sessionStorage to pass to quiz page
+      // Store quiz data in sessionStorage
       sessionStorage.setItem('quizData', JSON.stringify(data));
       sessionStorage.setItem('quizTopic', topic.trim());
       sessionStorage.setItem('quizId', quizData.quiz_id.toString());
+      sessionStorage.setItem('quizDifficulty', difficulty);
       
       // Navigate to quiz page
       navigate('/quiz');
@@ -131,6 +136,25 @@ const QuizForm: React.FC = () => {
             <small>Choose between 1 and 20 questions</small>
           </div>
 
+          <div className="form-group">
+            <label>Difficulty Level</label>
+            <div className="difficulty-selector">
+              {['easy', 'intermediate', 'hard'].map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`difficulty-btn difficulty-${level} ${difficulty === level ? 'active' : ''}`}
+                  onClick={() => setDifficulty(level)}
+                  disabled={loading}
+                >
+                  {level === 'easy' && 'Easy'}
+                  {level === 'intermediate' && 'Intermediate'}
+                  {level === 'hard' && 'Hard'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {error && <div className="error-message">{error}</div>}
 
           <button type="submit" disabled={loading} className="generate-btn">
@@ -150,4 +174,3 @@ const QuizForm: React.FC = () => {
 };
 
 export default QuizForm;
-

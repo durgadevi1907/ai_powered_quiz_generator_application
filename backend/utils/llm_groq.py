@@ -38,15 +38,36 @@ class GroqAIService:
             base_url="https://api.groq.com/openai/v1"
         )
 
-    def generate_quiz_questions(self, domain, sub_domain, number_of_questions, level):
+    def generate_quiz_questions(self, domain, sub_domain, number_of_questions, level, previous_questions=None):
         """Generate quiz questions using Groq API"""
         number_of_questions = min(number_of_questions, 5)
+
+        # Build previous questions text
+        prev_q_text = ""
+        if previous_questions:
+            prev_q_text = f"""
+AVOID these already used questions:
+{chr(10).join(f'- {q}' for q in previous_questions)}
+"""
+
+        # Difficulty-specific instructions
+        difficulty_instructions = {
+            "easy": "Use simple language. Questions should be straightforward and suitable for beginners.",
+            "intermediate": "Use moderate complexity. Questions should require some knowledge of the topic.",
+            "hard": "Use advanced concepts. Questions should be challenging and require deep understanding."
+        }
+        difficulty_hint = difficulty_instructions.get(level, difficulty_instructions["intermediate"])
+
         prompt = f"""
-Generate {number_of_questions} {level} MCQs on "{sub_domain}" from "{domain}".
+Generate {number_of_questions} {level} difficulty MCQs on "{sub_domain}" from "{domain}".
+{prev_q_text}
+Difficulty guidance: {difficulty_hint}
+
 STRICT:
 - Return ONLY valid JSON
 - No markdown
 - No extra text
+- Do NOT repeat any of the above questions
 FORMAT:
 {{
   "questions": [
@@ -105,14 +126,15 @@ class GeminiClient(GroqAIService):
     def __init__(self):
         super().__init__()
     
-    def generate_questions(self, topic: str, number_questions: int):
+    def generate_questions(self, topic: str, number_questions: int, previous_questions=None, difficulty="intermediate"):
         """Backwards compatibility wrapper"""
         try:
             result = self.generate_quiz_questions(
                 domain=topic,
                 sub_domain=topic,
                 number_of_questions=number_questions,
-                level="intermediate"
+                level=difficulty,
+                previous_questions=previous_questions
             )
             if isinstance(result, dict) and "error" in result:
                 return result
@@ -157,7 +179,7 @@ try:
 except Exception as e:
     print(f"⚠️ Warning: Could not initialize Groq service: {str(e)}")
 
-def generate_questions(topic: str, number_of_questions: int):
+def generate_questions(topic: str, number_of_questions: int, previous_questions=None, difficulty="intermediate"):
     """Generate quiz questions using Groq - main function"""
     try:
         service = get_groq_service()
@@ -165,7 +187,8 @@ def generate_questions(topic: str, number_of_questions: int):
             domain=topic,
             sub_domain=topic,
             number_of_questions=number_of_questions,
-            level="intermediate"
+            level=difficulty,
+            previous_questions=previous_questions
         )
     except Exception as e:
         print(f"❌ Error generating questions: {str(e)}")
