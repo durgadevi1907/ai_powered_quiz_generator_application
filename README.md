@@ -1,270 +1,255 @@
-# Quizomania - Quiz Generation Platform
+# QuizOMania
 
-A full-stack quiz generation application that uses Google's Gemini AI to dynamically generate multiple-choice questions on any topic.
+An AI-powered quiz generation web application developed using Flask and React TypeScript that dynamically creates personalized quizzes on any topic using the Groq API with the LLaMA 3.3 70B model.
 
-## Project Structure
-
-```
-quizomania/
-├── backend/               # Flask Python backend
-│   ├── app.py            # Main Flask application
-│   ├── config.py         # Configuration settings
-│   ├── run_server.py     # Server entry point
-│   ├── requirements.txt   # Python dependencies
-│   ├── .env              # Environment variables (API keys)
-│   ├── controllers/      # Business logic controllers
-│   │   ├── auth_controller.py
-│   │   └── question_controller.py
-│   ├── routes/           # API endpoints
-│   │   ├── auth_routes.py
-│   │   ├── question_routes.py
-│   │   ├── quiz_routes.py
-│   │   ├── dashboard_routes.py
-│   │   └── debug_routes.py
-│   ├── models/           # Database models
-│   │   ├── auth_models.py
-│   │   └── question_models.py
-│   ├── database/         # Database setup
-│   │   └── db.py
-│   └── utils/            # Utility functions
-│       └── llm_gemini.py # Gemini AI integration
-│
-└── frontend/             # React TypeScript frontend
-    ├── package.json
-    ├── tsconfig.json
-    ├── public/
-    ├── src/
-    │   ├── App.tsx
-    │   ├── index.tsx
-    │   └── components/
-    │       ├── QuizForm.tsx
-    │       ├── QuizPage.tsx
-    │       ├── auth/
-    │       │   ├── Login.tsx
-    │       │   └── Register.tsx
-    │       ├── dashboard/
-    │       │   └── Dashboard.tsx
-    │       └── navbar/
-    │           └── Navbar.tsx
-    └── build/            # Production build
-```
+---
 
 ## Features
 
-- **AI-Powered Question Generation** - Uses Google Gemini API to generate contextually relevant multiple-choice questions
-- **User Authentication** - Register and login functionality
-- **Quiz Dashboard** - View quiz history and statistics
-- **Dynamic Topics** - Generate quizzes on any topic
-- **Multiple Choice Format** - 4 option multiple-choice questions with validation
+- AI-powered dynamic quiz generation using Groq API
+- User authentication with login and registration
+- Quiz creation based on topic, difficulty, and question count
+- Instant quiz evaluation and score calculation
+- Performance dashboard with quiz history tracking
+- Responsive React TypeScript frontend
+- REST API backend with Swagger documentation
+- Modular full-stack application architecture
 
-## Prerequisites
+---
 
-- **Python 3.8+**
-- **Node.js 14+** and npm
-- **Google Gemini API Key** - Get it from [Google AI Studio](https://aistudio.google.com/app/apikey)
-- **SQLite** or configured database
+## Technologies Used
 
-## Setup Instructions
+| Category | Technologies |
+|---|---|
+| Frontend | React, TypeScript, HTML5, CSS3 |
+| Backend | Python, Flask, Flask-RESTX |
+| Database | SQLite |
+| APIs | Groq API (LLaMA 3.3 70B) |
+| Authentication | Token-based Authentication |
+| Documentation | Swagger UI |
 
-### Backend Setup
+---
 
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
+## Project Architecture
 
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+The application was developed using a modular full-stack architecture with separate frontend and backend modules.
 
-3. **Configure environment variables:**
-   Create or update `.env` file:
-   ```env
-   GOOGLE_API_KEY=your_gemini_api_key_here
-   FLASK_ENV=development
-   ```
+The system supports:
 
-4. **Run the backend server:**
-   ```bash
-   python app.py
-   # or
-   python run_server.py
-   ```
-   Server runs on `http://localhost:5000`
+- AI-powered quiz generation
+- REST API communication
+- User authentication
+- Dynamic quiz rendering
+- Quiz performance tracking
+- Modular component-based architecture
 
-### Frontend Setup
+---
 
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
+## Project Structure
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm start
-   # or set port explicitly
-   set PORT=3001 && npm start  # Windows
-   export PORT=3001 && npm start  # Linux/Mac
-   ```
-   Frontend runs on `http://localhost:3001`
-
-## API Endpoints
-
-### Question Generation
-- **POST** `/api/questions/generate` - Generate quiz questions
-  ```json
-  {
-    "topic": "python",
-    "number_questions": 5
-  }
-  ```
-
-### Authentication
-- **POST** `/api/auth/register` - User registration
-- **POST** `/api/auth/login` - User login
-
-### Dashboard
-- **GET** `/api/dashboard` - Get user dashboard data
-
-### Quiz Management
-- **GET** `/api/quiz` - Get all quizzes
-- **POST** `/api/quiz` - Create new quiz
-
-## Gemini Model Configuration
-
-The project uses **gemini-2.0-flash** model on the stable v1 API endpoint.
-
-**Model location:** [backend/utils/llm_gemini.py](backend/utils/llm_gemini.py)
-
-### Current Configuration
-- **Model:** `gemini-2.0-flash`
-- **API Version:** `v1` (stable)
-- **Endpoint:** `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent`
-
-### Rate Limiting & Quotas
-The free tier has limited requests. If you encounter 429 (Too Many Requests) errors:
-
-1. **Add Billing to Google Cloud Project:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Add a credit card to enable paid access
-   - This significantly increases rate limits
-
-2. **Wait for quota reset** - Free tier quotas reset daily
-
-3. **Use different API key** - Create a new project with a new API key
-
-## Troubleshooting
-
-### 429 Rate Limit Error
+```plaintext
+quizomania/
+├── backend/
+│   ├── controllers/
+│   ├── database/
+│   ├── models/
+│   ├── routes/
+│   ├── utils/
+│   ├── app.py
+│   ├── config.py
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── utils/
+│   │
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── README.md
 ```
-Error: 429 Client Error: Too Many Requests
-```
-**Solution:** Add billing to your Google Cloud project or use a different API key with available quota.
 
-### API Key Not Found
-```
-Error: Neither GOOGLE_API_KEY nor GEMINI_API_KEY found
-```
-**Solution:** Ensure `.env` file contains `GOOGLE_API_KEY=your_key_here`
+---
 
-### Port Already in Use
-```
-Error: Address already in use
-```
-**Solution:** Kill the process or use a different port:
+## Installation and Setup
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js v16 or above
+- npm
+- Groq API Key
+
+---
+
+## Backend Setup
+
+### Navigate to backend folder
+
 ```bash
-# Frontend on different port
-set PORT=3002 && npm start
-
-# Backend on different port
-python app.py  # Configure in config.py
+cd backend
 ```
 
-### Python Module Not Found
+### Create virtual environment
+
+```bash
+python -m venv venv
 ```
-ModuleNotFoundError: No module named 'flask'
+
+### Activate virtual environment
+
+#### Windows
+
+```bash
+venv\Scripts\activate
 ```
-**Solution:** Install requirements:
+
+#### macOS/Linux
+
+```bash
+source venv/bin/activate
+```
+
+### Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-## Development
+### Create `.env` file
 
-### Testing
-```bash
-# Backend tests
-cd backend
-python -m pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Build for Production
-```bash
-# Frontend build
-cd frontend
-npm run build
-
-# Output in frontend/build/
-```
-
-## Dependencies
-
-### Backend (Python)
-- Flask - Web framework
-- Flask-CORS - CORS handling
-- python-dotenv - Environment variables
-- google-generativeai - Gemini API
-- requests - HTTP client
-- pydantic - Data validation
-- langchain-google-genai - LangChain integration
-
-### Frontend (TypeScript/React)
-- React 18
-- TypeScript
-- Axios - HTTP client
-- React Router - Routing
-
-## Environment Variables
-
-### `.env` file (Backend)
 ```env
-GOOGLE_API_KEY=your_gemini_api_key_here
-FLASK_ENV=development
-FLASK_DEBUG=1
+GROQ_API_KEY=put your api key here
 ```
 
-## Contributing
+### Run backend server
 
-1. Create a feature branch
-2. Make changes
-3. Test thoroughly
-4. Submit pull request
+```bash
+python app.py
+```
+
+Backend runs on:
+
+```plaintext
+http://localhost:5000
+```
+
+Swagger Documentation:
+
+```plaintext
+http://localhost:5000/swagger/
+```
+
+---
+
+## Frontend Setup
+
+### Navigate to frontend folder
+
+```bash
+cd frontend
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Start frontend server
+
+```bash
+npm start
+```
+
+Frontend runs on:
+
+```plaintext
+http://localhost:3000
+```
+
+---
+
+## Functional Modules
+
+### Authentication Module
+
+- User registration and login
+- Token-based authentication
+- Session handling
+
+### Quiz Generation Module
+
+- AI-powered question generation
+- Topic and difficulty-based quiz creation
+- Dynamic question rendering
+
+### Quiz Evaluation Module
+
+- Instant score calculation
+- Answer validation and explanations
+
+### Dashboard Module
+
+- Quiz history tracking
+- User performance analytics
+
+### API Module
+
+- RESTful API architecture
+- Swagger API documentation
+- Frontend-backend communication
+
+---
+
+## Key Concepts Implemented
+
+- Full-stack web development
+- REST API integration
+- AI API integration
+- Authentication and session handling
+- React component-based architecture
+- Flask backend development
+- SQLite database integration
+- Modular application structure
+
+---
+
+## Future Enhancements
+
+- Leaderboard system
+- Timer-based quizzes
+- Quiz sharing functionality
+- Admin dashboard
+- Cloud database integration
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | User login |
+| POST | `/api/questions/generate` | Generate quiz questions |
+| POST | `/api/quiz/create` | Create quiz session |
+| POST | `/api/quiz/submit` | Submit quiz answers |
+| GET | `/api/dashboard/stats` | Fetch dashboard statistics |
+
+---
+
+## Author
+
+**Durgadevi M**
+
+Software Developer | Angular Developer | Python & Data Analytics Learner
+
+---
 
 ## License
 
-Infosys Project - 2025
-
-## Support
-
-For issues with:
-- **Gemini API:** Check [Google AI Documentation](https://ai.google.dev/)
-- **Flask:** Check [Flask Documentation](https://flask.palletsprojects.com/)
-- **React:** Check [React Documentation](https://react.dev/)
-
-## Notes
-
-- The backend uses Flask with SQLite by default
-- Frontend is built with React and TypeScript
-- API communication uses REST endpoints
-- Gemini API is used for AI-powered question generation
-- Rate limits apply to free tier - upgrade for production use
+This project was developed for educational and learning purposes.
