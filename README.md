@@ -241,7 +241,45 @@ http://localhost:3000
 | GET | `/api/dashboard/stats` | Fetch dashboard statistics |
 
 ---
+---
 
+## Screenshots
+
+### Login Page
+
+![Login Page](screenshots/login.png)
+
+---
+
+### Registration Page
+
+![Registration Page](screenshots/register.png)
+
+---
+
+### Quiz Generation
+
+![Quiz Generation](screenshots/createquiz.png)
+
+---
+
+### Quiz Interface
+
+![Quiz Interface](screenshots/quiz.png)
+
+---
+
+### Quiz Result
+
+![Quiz Result](screenshots/result.png)
+
+---
+
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+---
 ## Author
 
 **Durgadevi M**
